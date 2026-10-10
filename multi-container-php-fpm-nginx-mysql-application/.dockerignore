@@ -1,0 +1,5 @@
+.git
+.env
+*.log
+compose.yaml
+compose.override.yaml
