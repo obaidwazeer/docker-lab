@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Three-Tier DevOps App</title>
+</head>
+<body>
+  <h1>Three-Tier Application Running</h1>
+  <button onclick="checkApi()">Test Backend & Database</button>
+  <pre id="output">Click the button to query the API...</pre>
+  <script>
+    async function checkApi() {
+      const res = await fetch('/api/users');
+      const data = await res.json();
+      document.getElementById('output').textContent = JSON.stringify(data, null, 2);
+    }
+  </script>
+</body>
+</html>

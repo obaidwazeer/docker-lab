@@ -1,37 +1,17 @@
-# Stage 1
-# build the code
-FROM node:20-alpine as builder 
-
-# set working directory
-WORKDIR /app
-
-# copy the package file
-COPY package*.json .
-
-# install all the packages in the package file
-RUN npm ci
-
-# copy the source code
-COPY . .
-
-# build the code
-RUN npm run build
-
-# Stage 2
-# upload the build file to the web server
+# Sets the lightweight Alpine-based Nginx web server (~40MB) as the container user space
 FROM nginx:alpine
 
-# set the nginx configuration
+# Removes the default Nginx welcome site configuration so it does not conflict with ours
 RUN rm /etc/nginx/conf.d/default.conf
 
-# copy the configuration
+# Copies our custom Nginx reverse-proxy configuration into Nginx's active config folder
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
-# copy the above build code into nginx
-COPY --from=builder /app/dist /usr/share/nginx/html
+# Copies our static HTML frontend page into Nginx's default public web root directory
+COPY index.html /usr/share/nginx/html/index.html
 
-# expose the port
+# Documents that this container listens for incoming HTTP traffic on port 80
 EXPOSE 80
 
-# start nginx in the background
-CMD [ "nginx", "-g", "daemon off;" ]
+# Starts Nginx in the foreground (daemon off) so Docker keeps the container running
+CMD ["nginx", "-g", "daemon off;"]

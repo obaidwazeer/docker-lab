@@ -1,25 +1,51 @@
+# Defines all three container services that make up the application stack
 services:
+
+  # TIER 1: Presentation Layer (Nginx Reverse Proxy & Static Web Server)
   web:
-    image: nginx:alpine
+    # Builds the image using the Dockerfile located inside the ./frontend folder
+    build: ./frontend
+    # Maps port 8080 on your host machine to port 80 inside the Nginx container
     ports:
-      - "80:80"
+      - "8080:80"
+    # Ensures the 'api' container starts before the 'web' container boots
     depends_on:
-      - api 
+      - api
+
+  # TIER 2: Application Layer (Node.js REST API)
   api:
+    # Builds the image using the Dockerfile located inside the ./backend folder
     build: ./backend
+    # Injects database connection credentials as runtime environment variables
     environment:
       - DB_HOST=db
       - DB_USER=devops
-      - DB_PASS=secret123
+      - DB_PASSWORD=secretpassword
+      - DB_NAME=appdb
+    # Waits until the 'db' container passes its healthcheck before starting the API
     depends_on:
-      - db
+      db:
+        condition: service_healthy
+
+  # TIER 3: Data Layer (PostgreSQL Relational Database)
   db:
+    # Pulls the official lightweight Alpine image of PostgreSQL 16 directly from Docker Hub
     image: postgres:16-alpine
+    # Configures the initial database user, password, and database name on first boot
     environment:
       - POSTGRES_USER=devops
-      - POSTGRES_PASSWORD=secret123
+      - POSTGRES_PASSWORD=secretpassword
+      - POSTGRES_DB=appdb
+    # Attaches a Docker-managed named volume so database records survive container restarts
     volumes:
-      - postgres_data=/var/lib/postgresql/data
-    
+      - postgres_data:/var/lib/postgresql/data
+    # Verifies PostgreSQL is ready to accept connections before allowing the API to start
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U devops -d appdb"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+# Declares the named volume managed by Docker on the host machine
 volumes:
-  postgres_data: 
+  postgres_data:
